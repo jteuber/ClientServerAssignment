@@ -4,9 +4,8 @@
 
 Client::Client(asio::ip::tcp::socket&& socket )
     : m_socket( std::move(socket) ) // move the socket from the Server object here so that it's free in the server
-{
-
-}
+    , m_buffer( 100 )
+{}
 
 /**
  * @brief Client::start Starts the conversation with the client.
@@ -17,32 +16,33 @@ void Client::start(unsigned int serverStatus, std::function<void(Client*)> onDis
 {
 	m_onDisconnect = onDisconnect;
 
-	// read some data from the clinet
-	asio::error_code errorCode;
-	std::array<char, 128> buffer;
-	size_t messageLength = m_socket.read_some(asio::buffer(buffer), errorCode);
-
-	// check for any errors while receiving
-	if( errorCode )
+	// read some data from the client
+	asio::async_read_until( m_socket, m_buffer, '\n',
+	                          [serverStatus, this] (const asio::error_code& error, std::size_t /*bytesReceived*/)
 	{
-		std::cout << "ASIO error: " << errorCode.message() << std::endl;
-		return;
-	}
+		// check for any errors while receiving
+		if( error )
+		{
+			std::cout << "ASIO error: " << error.message() << std::endl;
+			return;
+		}
 
-	// and display it
-	std::cout.write(buffer.data(), messageLength);
+		// and display it
+		std::cout << &m_buffer;
+		std::cout.flush(); // just to be sure to stay up-to-date
 
 
-	// now send a status message to the client
-	std::string message = std::to_string( serverStatus ) + "\n";
-	asio::write(m_socket, asio::buffer(message), errorCode);
+		// now send a status message to the client
+		std::string message = std::to_string( serverStatus ) + "\n";
+		m_socket.async_write_some(asio::buffer(message), [this] (const asio::error_code& error, std::size_t) {
+			// check for any errors while sending
+			if( error )
+			{
+				std::cout << "ASIO error: " << error.message() << std::endl;
+				return;
+			}
 
-	// check for any errors while sending
-	if( errorCode )
-	{
-		std::cout << "ASIO error: " << errorCode.message() << std::endl;
-		return;
-	}
-
-	m_onDisconnect(this);
+			m_onDisconnect(this);
+		} );
+	} );
 }

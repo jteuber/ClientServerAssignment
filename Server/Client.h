@@ -16,6 +16,8 @@ public:
 private:
 	asio::ip::tcp::socket m_socket;
 	std::function<void(Client*)> m_onDisconnect;
+
+	asio::streambuf m_buffer;
 };
 
 #endif // CLIENT_H

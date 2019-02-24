@@ -9,6 +9,7 @@ int main()
 {
 	try
 	{
+		// Use the TcpServer class to take care of the event loop and accepting clients
 		TcpServer server(12345);
 		server.run();
 	}
