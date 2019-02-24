@@ -7,4 +7,10 @@ CONFIG -= qt
 LIBS += -pthread
 
 SOURCES += \
-        main.cpp
+        main.cpp \
+    TcpServer.cpp \
+    Client.cpp
+
+HEADERS += \
+    TcpServer.h \
+    Client.h
